@@ -1,0 +1,73 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Dashboard</h2>
+<div class="row">
+  <div class="card">
+    <h3>Budget</h3>
+    <p>Set your monthly budget</p>
+    <form method="post" action="{{ url_for('set_budget') }}">
+      <input type="number" step="0.01" name="budget" value="{{ budget }}" placeholder="0.00">
+      <button class="btn" type="submit">Set Budget</button>
+    </form>
+    <p>Total spent: ₹{{ total_spent }}</p>
+    <p>Remaining: ₹{{ remaining }}</p>
+    <p>Used: {{ percent_used }}%</p>
+    <a class="btn" href="{{ url_for('export_pdf') }}">Download PDF</a>
+  </div>
+  <div class="card">
+    <h3>Add Expense</h3>
+    <form method="post" action="{{ url_for('dashboard') }}">
+      <input name="amount" type="number" step="0.01" placeholder="Amount" required>
+      <input name="category" placeholder="Category">
+      <input name="note" placeholder="Note">
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </div>
+</div>
+<div class="chart-card card">
+  <h3>Spending by Category</h3>
+  <canvas id="pieChart" width="400" height="300"></canvas>
+</div>
+<div class="card">
+  <h3>Expenses</h3>
+  <ul>
+    {% for e in expenses %}
+      <li>{{ e.date }} — {{ e.category }} — ₹{{ e.amount }} — {{ e.note }}</li>
+    {% else %}
+      <li>No expenses yet</li>
+    {% endfor %}
+  </ul>
+</div>
+<script>
+  const categories = {{ categories|tojson }};
+  const values = {{ values|tojson }};
+  const total = {{ total_spent }};
+  const budget = {{ budget }};
+  const percentUsed = {{ percent_used }};
+  const ctx = document.getElementById('pieChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'pie',
+    data: {
+      labels: categories,
+      datasets: [{
+        data: values,
+        borderWidth: 1
+      }]
+    },
+    options: {
+      plugins: {
+        tooltip: {
+          callbacks: {
+            label: function(context) {
+              let label = context.label || '';
+              if (label) label += ': ';
+              label += context.parsed + ' (' + Math.round((context.parsed/total || 0)*100) + '%)';
+              return label;
+            }
+          }
+        }
+      }
+    }
+  });
+</script>
+{% endblock %}
